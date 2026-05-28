@@ -13,10 +13,11 @@ const ITEMS_PER_PAGE = 9;
 
 const fuseOptions = {
   keys: [
-    { name: "name", weight: 0.4 },
-    { name: "category", weight: 0.3 },
-    { name: "dimensions", weight: 0.15 },
+    { name: "name", weight: 0.35 },
+    { name: "category", weight: 0.25 },
     { name: "material", weight: 0.15 },
+    { name: "keywords", weight: 0.15 },
+    { name: "usage", weight: 0.10 },
   ],
   threshold: 0.3,
   includeScore: true,

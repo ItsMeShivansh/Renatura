@@ -43,6 +43,10 @@ export async function POST(request) {
       message: body.message,
       requestSample: body.requestSample || false,
       shippingAddress: body.requestSample ? body.shippingAddress : null,
+      // Quotation-specific fields (optional, from product detail pages)
+      productName: body.productName || null,
+      productSku: body.productSku || null,
+      approxOrderQuantity: body.approxOrderQuantity || null,
       createdAt: new Date().toISOString(),
       status: "new", // Default status for admin dashboard
     });

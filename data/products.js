@@ -431,11 +431,13 @@ export const products = [
 
 export const categories = [
   "All",
-  "W-Cut Bags",
-  "D-Cut Bags",
-  "Tableware",
-  "Food Packaging",
+  "Plates",
+  "Bowls",
+  "Trays",
+  "Meal Trays",
+  "Containers",
+  "Cups",
+  "Cutlery",
+  "Bags",
   "Specialty",
 ];
-
-export const bestsellers = [1, 2, 7, 12, 19, 21];

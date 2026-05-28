@@ -1,9 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { categories } from "@/data/products";
 import { Package, Link as LinkIcon, Plus, Edit2, Trash2, X, Save, Image as ImageIcon, Award, ShieldCheck, Loader2 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
+
+const productCategories = [
+  "Plates",
+  "Bowls",
+  "Trays",
+  "Meal Trays",
+  "Containers",
+  "Cups",
+  "Cutlery",
+  "Bags",
+  "Specialty",
+];
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("products");
@@ -57,7 +68,9 @@ export default function AdminDashboard() {
     setIsUploading(true);
     const reader = new FileReader();
     reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, image: reader.result }));
+      // Add the new image to the images array
+      const currentImages = formData.images || [];
+      setFormData((prev) => ({ ...prev, images: [...currentImages, reader.result] }));
       setIsUploading(false);
     };
     reader.onerror = () => {
@@ -67,6 +80,14 @@ export default function AdminDashboard() {
     reader.readAsDataURL(file);
   };
 
+  const removeImage = (index) => {
+    const currentImages = formData.images || [];
+    setFormData((prev) => ({
+      ...prev,
+      images: currentImages.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleOpenModal = (item = null) => {
     setEditingItem(item);
     if (item) {
@@ -74,8 +95,10 @@ export default function AdminDashboard() {
     } else {
       if (activeTab === "products") {
         setFormData({
-          name: "", category: categories[1], dimensions: "",
-          material: "", moq: "", price: "", certification: "", buyUrl: "", image: "/products/placeholder.svg",
+          id: "", name: "", category: productCategories[0], brand: "Renatura",
+          material: "", packQty: "", sleevesPerBox: "", pcsPerSleeve: "",
+          weight: "", diameter: "", length: "", width: "", height: "", thickness: "",
+          usage: "", keywords: "", images: [],
         });
       } else if (activeTab === "links") {
         setFormData({ title: "", url: "" });
@@ -120,7 +143,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         const savedItem = await res.json();
         if (activeTab === "products") {
-          if (isEdit) setProducts(products.map((p) => (p.id === savedItem.id ? savedItem : p)));
+          if (isEdit) setProducts(products.map((p) => (p.id === savedItem.id ? { ...savedItem, _rowIndex: editingItem._rowIndex } : p)));
           else setProducts([savedItem, ...products]);
         } else if (activeTab === "links") {
           if (isEdit) setLinks(links.map((l) => (l.id === savedItem.id ? savedItem : l)));
@@ -144,12 +167,14 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, rowIndex) => {
     if (!confirm("Are you sure you want to delete this item?")) return;
     try {
-      const res = await fetch(`/api/admin?type=${activeTab}&id=${id}`, {
-        method: "DELETE",
-      });
+      let url = `/api/admin?type=${activeTab}&id=${id}`;
+      if (activeTab === "products" && rowIndex) {
+        url += `&rowIndex=${rowIndex}`;
+      }
+      const res = await fetch(url, { method: "DELETE" });
 
       if (res.ok) {
         if (activeTab === "products") setProducts(products.filter((p) => p.id !== id));
@@ -178,7 +203,7 @@ export default function AdminDashboard() {
               activeTab === "products" ? "bg-green text-black" : "text-foreground/70 hover:bg-foreground/5 hover:text-foreground"
             }`}
           >
-            <Package className="w-5 h-5" /> Products
+            <Package className="w-5 h-5" /> Products (Google Sheets)
           </button>
           <button
             onClick={() => setActiveTab("standards")}
@@ -213,6 +238,9 @@ export default function AdminDashboard() {
               <h2 className="text-xl font-bold text-foreground capitalize">
                 Manage {activeTab.replace(/([A-Z])/g, ' $1').trim()}
               </h2>
+              {activeTab === "products" && (
+                <p className="text-xs text-foreground/40 mt-1">Synced with Google Sheets • Images stored in Firestore</p>
+              )}
             </div>
             <button
               onClick={() => handleOpenModal()}
@@ -228,7 +256,7 @@ export default function AdminDashboard() {
                 <thead className="bg-foreground/5 text-foreground/70 text-xs uppercase border-b border-foreground/10">
                   <tr>
                     {activeTab === "products" && (
-                      <><th className="px-6 py-4 font-medium">Product</th><th className="px-6 py-4 font-medium">Category</th><th className="px-6 py-4 font-medium">Price</th></>
+                      <><th className="px-6 py-4 font-medium">SKU</th><th className="px-6 py-4 font-medium">Product</th><th className="px-6 py-4 font-medium">Category</th><th className="px-6 py-4 font-medium">Images</th></>
                     )}
                     {activeTab === "links" && (
                       <><th className="px-6 py-4 font-medium">Title</th><th className="px-6 py-4 font-medium">URL</th></>
@@ -256,31 +284,37 @@ export default function AdminDashboard() {
                     <>
                       {activeTab === "products" && products.map((item) => (
                         <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
-                          <td className="px-6 py-4 font-medium flex items-center gap-4"><ImageIcon className="w-4 h-4 text-foreground/30" />{item.name}</td>
+                          <td className="px-6 py-4 text-foreground/50 font-mono text-xs">{item.id}</td>
+                          <td className="px-6 py-4 font-medium">{item.name}</td>
                           <td className="px-6 py-4 text-foreground/70">{item.category}</td>
-                          <td className="px-6 py-4 text-foreground/70">{item.price}</td>
-                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                          <td className="px-6 py-4 text-foreground/70">
+                            <span className="inline-flex items-center gap-1">
+                              <ImageIcon className="w-3.5 h-3.5" />
+                              {item.images?.length || 0}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={() => handleDelete(item.id, item._rowIndex)} /></td>
                         </tr>
                       ))}
                       {activeTab === "links" && links.map((item) => (
                         <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
                           <td className="px-6 py-4 font-medium">{item.title}</td>
                           <td className="px-6 py-4 text-foreground/70">{item.url}</td>
-                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={() => handleDelete(item.id)} /></td>
                         </tr>
                       ))}
                       {activeTab === "standards" && standards.map((item) => (
                         <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
                           <td className="px-6 py-4 font-medium text-green">{item.code}</td>
                           <td className="px-6 py-4 text-foreground/70 max-w-sm truncate">{item.description}</td>
-                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={() => handleDelete(item.id)} /></td>
                         </tr>
                       ))}
                       {activeTab === "credentials" && credentials.map((item) => (
                         <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
                           <td className="px-6 py-4 font-medium">{item.title}</td>
                           <td className="px-6 py-4 text-foreground/70 max-w-sm truncate">{item.description}</td>
-                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={() => handleDelete(item.id)} /></td>
                         </tr>
                       ))}
                     </>
@@ -311,42 +345,137 @@ export default function AdminDashboard() {
                   
                   {activeTab === "products" && (
                     <>
-                      <div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Product Name</label><input type="text" name="name" value={formData.name || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div>
-                      <div className="grid grid-cols-2 gap-5"><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Category</label><select name="category" value={formData.category || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-background border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors appearance-none">{categories.filter(c => c !== "All").map(c => (<option key={c} value={c}>{c}</option>))}</select></div><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Price</label><input type="text" name="price" value={formData.price || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div></div>
-                      <div className="grid grid-cols-2 gap-5"><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Dimensions</label><input type="text" name="dimensions" value={formData.dimensions || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Material</label><input type="text" name="material" value={formData.material || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div></div>
-                      <div className="grid grid-cols-2 gap-5"><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">MOQ</label><input type="text" name="moq" value={formData.moq || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Certification</label><input type="text" name="certification" value={formData.certification || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div></div>
-                      <div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Buy URL</label><input type="url" name="buyUrl" value={formData.buyUrl || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm text-foreground/70">Product Image</label>
-                        <div className="flex items-center gap-4">
-                          <input 
-                            type="text" 
-                            name="image" 
-                            value={formData.image || ""} 
-                            onChange={handleChange} 
-                            required 
-                            placeholder="/products/placeholder.svg"
-                            className="flex-1 px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" 
-                          />
-                          <label className="flex items-center gap-2 px-4 py-2.5 border border-foreground/20 rounded-sm text-sm font-semibold text-foreground bg-background hover:bg-foreground/5 transition-colors cursor-pointer flex-shrink-0">
-                            {isUploading ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="w-4 h-4" /> Upload Image
-                              </>
-                            )}
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={handleImageUpload} 
-                              disabled={isUploading}
-                              className="hidden" 
-                            />
-                          </label>
+                      {/* Row 1: SKU & Product Name */}
+                      <div className="grid grid-cols-2 gap-5">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">SKU / Product Code</label>
+                          <input type="text" name="id" value={formData.id || ""} onChange={handleChange} required disabled={!!editingItem} placeholder="e.g. F3539" className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors disabled:opacity-50" />
                         </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Brand</label>
+                          <input type="text" name="brand" value={formData.brand || ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm text-foreground/70">Product Name</label>
+                        <input type="text" name="name" value={formData.name || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                      </div>
+
+                      {/* Row 2: Category & Material */}
+                      <div className="grid grid-cols-2 gap-5">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Category</label>
+                          <select name="category" value={formData.category || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-background border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors appearance-none">
+                            {productCategories.map(c => (<option key={c} value={c}>{c}</option>))}
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Material</label>
+                          <input type="text" name="material" value={formData.material || ""} onChange={handleChange} required placeholder="e.g. 100% Sugarcane Bagasse" className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                      </div>
+
+                      {/* Row 3: Pack Info */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Pack Qty</label>
+                          <input type="number" name="packQty" value={formData.packQty ?? ""} onChange={handleChange} placeholder="e.g. 2000" className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Sleeves/Box</label>
+                          <input type="number" name="sleevesPerBox" value={formData.sleevesPerBox ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Pcs/Sleeve</label>
+                          <input type="number" name="pcsPerSleeve" value={formData.pcsPerSleeve ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                      </div>
+
+                      {/* Row 4: Dimensions */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Diameter (mm)</label>
+                          <input type="number" step="any" name="diameter" value={formData.diameter ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Length (mm)</label>
+                          <input type="number" step="any" name="length" value={formData.length ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Width (mm)</label>
+                          <input type="number" step="any" name="width" value={formData.width ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                      </div>
+
+                      {/* Row 5: Weight, Height, Thickness */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Weight (g)</label>
+                          <input type="number" step="any" name="weight" value={formData.weight ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Height (mm)</label>
+                          <input type="number" step="any" name="height" value={formData.height ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <label className="text-sm text-foreground/70">Thickness (mm)</label>
+                          <input type="number" step="any" name="thickness" value={formData.thickness ?? ""} onChange={handleChange} className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                        </div>
+                      </div>
+
+                      {/* Usage & Keywords */}
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm text-foreground/70">Usage / B2B Application</label>
+                        <textarea name="usage" value={formData.usage || ""} onChange={handleChange} rows={3} placeholder="Describe target use cases and industries..." className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors resize-none" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm text-foreground/70">Keywords (comma-separated)</label>
+                        <input type="text" name="keywords" value={formData.keywords || ""} onChange={handleChange} placeholder="e.g. Eco-friendly, compostable, disposable" className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                      </div>
+
+                      {/* Multi-Image Upload */}
+                      <div className="flex flex-col gap-3">
+                        <label className="text-sm text-foreground/70">Product Images (stored in Firestore)</label>
+                        
+                        {/* Thumbnails */}
+                        {formData.images && formData.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {formData.images.map((img, idx) => (
+                              <div key={idx} className="relative w-20 h-20 rounded-sm overflow-hidden border border-foreground/10 group">
+                                <img src={img} alt={`Image ${idx + 1}`} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(idx)}
+                                  className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Trash2 className="w-4 h-4 text-white" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Upload button */}
+                        <label className="flex items-center gap-2 px-4 py-2.5 border border-foreground/20 rounded-sm text-sm font-semibold text-foreground bg-background hover:bg-foreground/5 transition-colors cursor-pointer self-start">
+                          {isUploading ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-4 h-4" /> Add Image
+                            </>
+                          )}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleImageUpload} 
+                            disabled={isUploading}
+                            className="hidden" 
+                          />
+                        </label>
+                        <p className="text-xs text-foreground/30">Max 800KB per image. Images are stored in Firestore.</p>
                       </div>
                     </>
                   )}
@@ -401,7 +530,7 @@ function ActionButtons({ item, onEdit, onDelete }) {
   return (
     <div className="flex items-center justify-end gap-2">
       <button onClick={() => onEdit(item)} className="p-2 text-foreground/50 hover:text-green transition-colors"><Edit2 className="w-4 h-4" /></button>
-      <button onClick={() => onDelete(item.id)} className="p-2 text-foreground/50 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+      <button onClick={onDelete} className="p-2 text-foreground/50 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
     </div>
   );
 }

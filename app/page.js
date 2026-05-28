@@ -11,7 +11,7 @@ import {
 import AnimatedSection from "@/components/AnimatedSection";
 import LogoIcon from "@/components/LogoIcon";
 import ProductCard from "@/components/ProductCard";
-import { products as initialProducts, bestsellers } from "@/data/products";
+import { getProducts } from "@/lib/google-sheets";
 import { getDb } from "@/lib/firebase-admin";
 
 const trustPoints = [
@@ -54,21 +54,34 @@ const trustPoints = [
 ];
 
 export default async function Home() {
-  let productsList = initialProducts;
+  let bestsellerProducts = [];
 
   try {
-    const db = getDb();
-    const snap = await db.collection("products").get();
-    if (!snap.empty) {
-      productsList = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    }
-  } catch (error) {
-    console.error("Firestore loading error on homepage:", error.message);
-  }
+    // Fetch products from Google Sheets
+    const sheetProducts = await getProducts();
 
-  const bestsellerProducts = productsList.filter((p) =>
-    bestsellers.includes(Number(p.id)) || bestsellers.includes(String(p.id)) || bestsellers.includes(p.id)
-  );
+    // Fetch images from Firestore
+    let imagesMap = {};
+    try {
+      const db = getDb();
+      const imagesSnap = await db.collection("product_images").get();
+      imagesSnap.docs.forEach((doc) => {
+        imagesMap[doc.id] = doc.data().images || [];
+      });
+    } catch (imgErr) {
+      console.error("Failed to load images on homepage:", imgErr.message);
+    }
+
+    // Merge images into products and take first 6 as featured
+    const enriched = sheetProducts.map((p) => {
+      const { _rowIndex, ...clean } = p;
+      return { ...clean, images: imagesMap[p.id] || [] };
+    });
+
+    bestsellerProducts = enriched.slice(0, 6);
+  } catch (error) {
+    console.error("Products loading error on homepage:", error.message);
+  }
   return (
     <div className="flex flex-col">
       {/* ═══════════════════════════════════════════
