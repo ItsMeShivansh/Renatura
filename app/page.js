@@ -72,13 +72,14 @@ export default async function Home() {
       console.error("Failed to load images on homepage:", imgErr.message);
     }
 
-    // Merge images into products and take first 6 as featured
+    // Merge images into products
     const enriched = sheetProducts.map((p) => {
       const { _rowIndex, ...clean } = p;
       return { ...clean, images: imagesMap[p.id] || [] };
     });
 
-    bestsellerProducts = enriched.slice(0, 6);
+    const bestsellers = enriched.filter(p => p.bestseller);
+    bestsellerProducts = bestsellers.length > 0 ? bestsellers : enriched.slice(0, 6);
   } catch (error) {
     console.error("Products loading error on homepage:", error.message);
   }

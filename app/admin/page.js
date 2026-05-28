@@ -98,7 +98,7 @@ export default function AdminDashboard() {
           id: "", name: "", category: productCategories[0], brand: "Renatura",
           material: "", packQty: "", sleevesPerBox: "", pcsPerSleeve: "",
           weight: "", diameter: "", length: "", width: "", height: "", thickness: "",
-          usage: "", keywords: "", images: [],
+          usage: "", keywords: "", bestseller: false, images: [],
         });
       } else if (activeTab === "links") {
         setFormData({ title: "", url: "" });
@@ -118,8 +118,8 @@ export default function AdminDashboard() {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const handleSave = async (e) => {
@@ -432,6 +432,12 @@ export default function AdminDashboard() {
                       <div className="flex flex-col gap-2">
                         <label className="text-sm text-foreground/70">Keywords (comma-separated)</label>
                         <input type="text" name="keywords" value={formData.keywords || ""} onChange={handleChange} placeholder="e.g. Eco-friendly, compostable, disposable" className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" />
+                      </div>
+                      
+                      {/* Bestseller Toggle */}
+                      <div className="flex items-center gap-3 p-4 bg-foreground/5 border border-foreground/10 rounded-sm">
+                        <input type="checkbox" name="bestseller" id="bestseller" checked={formData.bestseller || false} onChange={handleChange} className="w-5 h-5 accent-green cursor-pointer" />
+                        <label htmlFor="bestseller" className="text-sm text-foreground cursor-pointer font-medium">Mark as Bestseller (Shows on Homepage)</label>
                       </div>
 
                       {/* Multi-Image Upload */}

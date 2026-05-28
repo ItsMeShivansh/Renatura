@@ -37,9 +37,9 @@ export default function ImageGallery({ images = [], productName = "Product" }) {
 
   if (!hasImages) {
     return (
-      <div className="w-full aspect-square rounded-sm bg-[#F4EBDD]/5 border border-[#F4EBDD]/10 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-[#F4EBDD]/20">
-          <svg width="64" height="64" viewBox="0 0 48 48" fill="none" className="text-[#F4EBDD]/30">
+      <div className="w-full aspect-square rounded-sm bg-foreground/5 border border-foreground/10 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-foreground/20">
+          <svg width="64" height="64" viewBox="0 0 48 48" fill="none" className="text-foreground/30">
             <rect x="8" y="12" width="32" height="28" rx="1" stroke="currentColor" strokeWidth="2" />
             <path d="M16 12V8C16 5.79086 17.7909 4 20 4H28C30.2091 4 32 5.79086 32 8V12" stroke="currentColor" strokeWidth="2" />
             <circle cx="24" cy="26" r="6" stroke="currentColor" strokeWidth="2" />

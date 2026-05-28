@@ -19,7 +19,7 @@ export default function ProductCard({ product }) {
 
   return (
     <Link href={`/products/${encodeURIComponent(product.id)}`} className="block h-full">
-      <div className="group border border-[#F4EBDD]/10 rounded-sm p-6 flex flex-col gap-5 transition-all duration-300 hover:scale-[1.03] hover:border-[#F4EBDD]/20 bg-secondary h-full cursor-pointer">
+      <div className="group border border-[#F4EBDD]/10 rounded-sm p-6 flex flex-col gap-5 transition-all duration-300 hover:scale-[1.01] hover:border-[#F4EBDD]/20 bg-secondary h-full cursor-pointer">
         {/* Product image */}
         <div className="w-full aspect-square rounded-sm bg-[#F4EBDD]/5 border border-[#F4EBDD]/5 flex items-center justify-center overflow-hidden relative">
           {displayImage ? (
