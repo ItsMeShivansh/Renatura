@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase-admin";
+import { getDb } from "@/lib/firebase-admin";
 
 export async function POST(request) {
   try {
@@ -34,6 +34,7 @@ export async function POST(request) {
     }
 
     // Save the inquiry to Firestore
+    const db = getDb();
     await db.collection("inquiries").add({
       name: body.name,
       company: body.company,
