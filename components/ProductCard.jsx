@@ -5,34 +5,42 @@ import { ExternalLink } from "lucide-react";
 export default function ProductCard({ product }) {
   return (
     <div className="group border border-[#F4EBDD]/10 rounded-sm p-6 flex flex-col gap-5 transition-transform duration-300 hover:scale-[1.03] bg-secondary h-full">
-      {/* Product image placeholder */}
-      <div className="w-full aspect-square rounded-sm bg-[#F4EBDD]/5 border border-[#F4EBDD]/5 flex items-center justify-center overflow-hidden">
-        <div className="flex flex-col items-center gap-2 text-[#F4EBDD]/20">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 48 48"
-            fill="none"
-            className="text-[#F4EBDD]/30"
-          >
-            <rect
-              x="8"
-              y="12"
-              width="32"
-              height="28"
-              rx="1"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="M16 12V8C16 5.79086 17.7909 4 20 4H28C30.2091 4 32 5.79086 32 8V12"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <circle cx="24" cy="26" r="6" stroke="currentColor" strokeWidth="2" />
-          </svg>
-          <span className="text-xs">Product Image</span>
-        </div>
+      {/* Product image */}
+      <div className="w-full aspect-square rounded-sm bg-[#F4EBDD]/5 border border-[#F4EBDD]/5 flex items-center justify-center overflow-hidden relative">
+        {product.image && product.image !== "/products/placeholder.svg" ? (
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-[#F4EBDD]/20">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 48 48"
+              fill="none"
+              className="text-[#F4EBDD]/30"
+            >
+              <rect
+                x="8"
+                y="12"
+                width="32"
+                height="28"
+                rx="1"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <path
+                d="M16 12V8C16 5.79086 17.7909 4 20 4H28C30.2091 4 32 5.79086 32 8V12"
+                stroke="currentColor"
+                strokeWidth="2"
+              />
+              <circle cx="24" cy="26" r="6" stroke="currentColor" strokeWidth="2" />
+            </svg>
+            <span className="text-xs">Product Image</span>
+          </div>
+        )}
       </div>
 
       {/* Category badge */}
