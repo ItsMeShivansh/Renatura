@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { db } from "@/lib/firebase-admin";
 
 export async function POST(request) {
   try {
@@ -32,21 +33,18 @@ export async function POST(request) {
       );
     }
 
-    // Log the inquiry (placeholder for future admin dashboard integration)
-    console.log("═══════════════════════════════════════");
-    console.log("NEW B2B INQUIRY RECEIVED");
-    console.log("═══════════════════════════════════════");
-    console.log("Name:", body.name);
-    console.log("Company:", body.company);
-    console.log("Email:", body.email);
-    console.log("Volume:", body.volume);
-    console.log("Message:", body.message || "—");
-    console.log("Sample Requested:", body.requestSample ? "Yes" : "No");
-    if (body.requestSample) {
-      console.log("Shipping Address:", body.shippingAddress);
-    }
-    console.log("Timestamp:", new Date().toISOString());
-    console.log("═══════════════════════════════════════\n");
+    // Save the inquiry to Firestore
+    await db.collection("inquiries").add({
+      name: body.name,
+      company: body.company,
+      email: body.email,
+      volume: body.volume,
+      message: body.message || "",
+      requestSample: body.requestSample || false,
+      shippingAddress: body.requestSample ? body.shippingAddress : null,
+      createdAt: new Date().toISOString(),
+      status: "new", // Default status for admin dashboard
+    });
 
     return NextResponse.json(
       {
