@@ -1,41 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Send, CheckCircle, AlertCircle, Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
-
-const subjectOptions = ["General Inquiry", "Press & Media", "Local Vendor Support", "Product Question", "Other"];
+import InquiryForm from "@/components/InquiryForm";
 
 export default function ContactPage() {
-  const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
-  const [status, setStatus] = useState("idle");
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      if (res.ok) {
-        setStatus("success");
-        setFormData({ name: "", email: "", subject: "", message: "" });
-      } else {
-        setStatus("error");
-      }
-    } catch {
-      setStatus("error");
-    }
-  };
-
   return (
     <div className="flex flex-col">
       {/* Header */}
@@ -63,56 +32,7 @@ export default function ContactPage() {
           {/* Form */}
           <div className="lg:col-span-3">
             <AnimatedSection>
-              {status === "success" ? (
-                <div className="flex flex-col items-center gap-6 py-16 text-center">
-                  <CheckCircle className="w-16 h-16 text-green" />
-                  <h3 className="text-2xl font-bold text-foreground">Message Sent</h3>
-                  <p className="text-foreground/60 max-w-md mx-auto">Thank you for reaching out. We&apos;ll get back to you shortly.</p>
-                  <button onClick={() => setStatus("idle")} className="px-8 py-3 border border-foreground/20 text-foreground rounded-sm text-sm font-medium transition-transform duration-300 hover:scale-105">
-                    Send Another Message
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                      <label className="text-sm font-medium text-foreground/70">Full Name <span className="text-green">*</span></label>
-                      <input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder="Your name" className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm focus:border-green transition-colors duration-300" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label className="text-sm font-medium text-foreground/70">Email <span className="text-green">*</span></label>
-                      <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="you@email.com" className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm focus:border-green transition-colors duration-300" />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-foreground/70">Subject <span className="text-green">*</span></label>
-                    <select name="subject" value={formData.subject} onChange={handleChange} required className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm focus:border-green transition-colors duration-300 appearance-none cursor-pointer">
-                      <option value="" className="bg-background">Select a subject</option>
-                      {subjectOptions.map((opt) => (
-                        <option key={opt} value={opt} className="bg-background">{opt}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-foreground/70">Message <span className="text-green">*</span></label>
-                    <textarea name="message" value={formData.message} onChange={handleChange} required rows={5} placeholder="Your message..." className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm focus:border-green transition-colors duration-300 resize-none" />
-                  </div>
-
-                  {status === "error" && (
-                    <div className="flex items-center gap-2 text-sm"><AlertCircle className="w-4 h-4 text-green" /> Something went wrong.</div>
-                  )}
-
-                  <button type="submit" disabled={status === "loading"} className="flex items-center justify-center gap-2 w-full md:w-auto md:self-start px-10 py-4 bg-green text-black text-sm font-bold rounded-sm transition-transform duration-300 hover:scale-105 disabled:opacity-50">
-                    {status === "loading" ? (
-                      <><div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-sm animate-spin" />Sending...</>
-                    ) : (
-                      <>Send Message <Send className="w-4 h-4" /></>
-                    )}
-                  </button>
-                </form>
-              )}
+              <InquiryForm defaultSubject="General Inquiry" />
             </AnimatedSection>
           </div>
 

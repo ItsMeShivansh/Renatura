@@ -6,7 +6,7 @@ export async function POST(request) {
     const body = await request.json();
 
     // Validate required fields
-    const requiredFields = ["name", "company", "email", "volume"];
+    const requiredFields = ["name", "company", "email", "message"];
     for (const field of requiredFields) {
       if (!body[field] || body[field].trim() === "") {
         return NextResponse.json(
@@ -33,14 +33,14 @@ export async function POST(request) {
       );
     }
 
-    // Save the inquiry to Firestore
+    // Save the unified inquiry to Firestore (collection: inquiries)
     const db = getDb();
     await db.collection("inquiries").add({
       name: body.name,
       company: body.company,
       email: body.email,
-      volume: body.volume,
-      message: body.message || "",
+      subject: body.subject || "General Inquiry",
+      message: body.message,
       requestSample: body.requestSample || false,
       shippingAddress: body.requestSample ? body.shippingAddress : null,
       createdAt: new Date().toISOString(),
@@ -50,12 +50,12 @@ export async function POST(request) {
     return NextResponse.json(
       {
         success: true,
-        message: "Inquiry received successfully. Our team will contact you within 24-48 hours.",
+        message: "Your inquiry has been successfully submitted.",
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("B2B Inquiry Error:", error);
+    console.error("Unified Inquiry Error:", error);
     return NextResponse.json(
       { success: false, message: "Internal server error" },
       { status: 500 }

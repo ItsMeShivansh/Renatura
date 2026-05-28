@@ -6,7 +6,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
-import B2BForm from "@/components/B2BForm";
+import InquiryForm from "@/components/InquiryForm";
 
 export const metadata = {
   title: "Export & Import — Renatura B2B Hub",
@@ -207,7 +207,7 @@ export default function ExportImportPage() {
           </AnimatedSection>
 
           <AnimatedSection delay={0.1}>
-            <B2BForm />
+            <InquiryForm defaultSubject="B2B Inquiry" />
           </AnimatedSection>
         </div>
       </section>

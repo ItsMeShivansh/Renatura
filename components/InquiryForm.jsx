@@ -4,23 +4,21 @@ import { useState } from "react";
 import { Send, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const volumeOptions = [
-  "Select Order Volume",
-  "1,000 — 5,000 units",
-  "5,000 — 10,000 units",
-  "10,000 — 25,000 units",
-  "25,000 — 50,000 units",
-  "50,000 — 100,000 units",
-  "100,000+ units",
-  "Custom / Not Sure",
+const subjectOptions = [
+  "General Inquiry",
+  "B2B Inquiry",
+  "Product Question",
+  "Press & Media",
+  "Local Vendor Support",
+  "Other",
 ];
 
-export default function B2BForm() {
+export default function InquiryForm({ defaultSubject = "General Inquiry" }) {
   const [formData, setFormData] = useState({
     name: "",
     company: "",
     email: "",
-    volume: "",
+    subject: defaultSubject,
     message: "",
     requestSample: false,
     shippingAddress: "",
@@ -41,7 +39,7 @@ export default function B2BForm() {
     setStatus("loading");
 
     try {
-      const res = await fetch("/api/b2b-inquiry", {
+      const res = await fetch("/api/inquiries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -53,7 +51,7 @@ export default function B2BForm() {
           name: "",
           company: "",
           email: "",
-          volume: "",
+          subject: defaultSubject,
           message: "",
           requestSample: false,
           shippingAddress: "",
@@ -102,7 +100,7 @@ export default function B2BForm() {
             value={formData.name}
             onChange={handleChange}
             required
-            className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground focus:border-green transition-colors duration-300"
+            className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground/40 focus:border-green transition-colors duration-300"
             placeholder="Your name"
           />
         </div>
@@ -116,13 +114,13 @@ export default function B2BForm() {
             value={formData.company}
             onChange={handleChange}
             required
-            className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground focus:border-green transition-colors duration-300"
+            className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground/40 focus:border-green transition-colors duration-300"
             placeholder="Your company"
           />
         </div>
       </div>
 
-      {/* Email & Volume */}
+      {/* Email & Subject */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-foreground/70">
@@ -134,24 +132,24 @@ export default function B2BForm() {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground focus:border-green transition-colors duration-300"
+            className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground/40 focus:border-green transition-colors duration-300"
             placeholder="you@company.com"
           />
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-foreground/70">
-            Order Volume <span className="text-green">*</span>
+            Subject <span className="text-green">*</span>
           </label>
           <div className="relative">
             <select
-              name="volume"
-              value={formData.volume}
+              name="subject"
+              value={formData.subject}
               onChange={handleChange}
               required
               className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm focus:border-green transition-colors duration-300 appearance-none cursor-pointer"
             >
-              {volumeOptions.map((opt) => (
-                <option key={opt} value={opt === "Select Order Volume" ? "" : opt} className="bg-background text-foreground">
+              {subjectOptions.map((opt) => (
+                <option key={opt} value={opt} className="bg-background text-foreground">
                   {opt}
                 </option>
               ))}
@@ -164,14 +162,15 @@ export default function B2BForm() {
       {/* Message */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-foreground/70">
-          Custom Message / Requirements
+          Message / Requirements <span className="text-green">*</span>
         </label>
         <textarea
           name="message"
           value={formData.message}
           onChange={handleChange}
+          required
           rows={4}
-          className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground focus:border-green transition-colors duration-300 resize-none"
+          className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground/40 focus:border-green transition-colors duration-300 resize-none"
           placeholder="Tell us about your specific requirements, custom branding needs, or any questions..."
         />
       </div>
@@ -227,7 +226,7 @@ export default function B2BForm() {
                   onChange={handleChange}
                   required={formData.requestSample}
                   rows={3}
-                  className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground focus:border-green transition-colors duration-300 resize-none"
+                  className="w-full px-5 py-3.5 bg-background border border-foreground/20 rounded-sm text-foreground text-sm placeholder:text-foreground/40 focus:border-green transition-colors duration-300 resize-none"
                   placeholder="Full shipping address for sample delivery..."
                 />
               </div>
