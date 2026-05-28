@@ -29,7 +29,6 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const debounceRef = useRef(null);
 
   // Fetch products dynamically from API
@@ -103,16 +102,10 @@ export default function ProductsPage() {
   });
 
   useEffect(() => {
-    if (inView && hasMore && !isLoadingMore) {
-      setIsLoadingMore(true);
-      // Simulate a slight delay for smooth UX
-      const timer = setTimeout(() => {
-        setDisplayCount((prev) => prev + 6);
-        setIsLoadingMore(false);
-      }, 400);
-      return () => clearTimeout(timer);
+    if (inView && hasMore) {
+      setDisplayCount((prev) => prev + 6);
     }
-  }, [inView, hasMore, isLoadingMore]);
+  }, [inView, hasMore]);
 
   // Local search input state for controlled input
   const [inputValue, setInputValue] = useState("");
@@ -221,12 +214,8 @@ export default function ProductsPage() {
               {hasMore && (
                 <div
                   ref={sentinelRef}
-                  className="flex items-center justify-center py-16"
-                >
-                  {isLoadingMore && (
-                    <Loader2 className="w-6 h-6 text-green animate-spin" />
-                  )}
-                </div>
+                  className="flex items-center justify-center py-8"
+                />
               )}
 
               {/* End of list */}
