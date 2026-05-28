@@ -1,26 +1,47 @@
 "use client";
 
-import { useState } from "react";
-import { products as initialProducts, categories } from "@/data/products";
-import { coreStandards as initialStandards, merchantCredentials as initialCredentials } from "@/data/certifications";
-import { Package, Link as LinkIcon, Plus, Edit2, Trash2, X, Save, Image as ImageIcon, Award, ShieldCheck } from "lucide-react";
+import { useState, useEffect } from "react";
+import { categories } from "@/data/products";
+import { Package, Link as LinkIcon, Plus, Edit2, Trash2, X, Save, Image as ImageIcon, Award, ShieldCheck, Loader2 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("products");
   
   // State for all dynamic entities
-  const [products, setProducts] = useState(initialProducts);
-  const [links, setLinks] = useState([
-    { id: 1, title: "Amazon Storefront", url: "https://amazon.in" },
-    { id: 2, title: "Flipkart Storefront", url: "https://flipkart.com" },
-  ]);
-  const [standards, setStandards] = useState(initialStandards);
-  const [credentials, setCredentials] = useState(initialCredentials);
+  const [products, setProducts] = useState([]);
+  const [links, setLinks] = useState([]);
+  const [standards, setStandards] = useState([]);
+  const [credentials, setCredentials] = useState([]);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
+
+  // Fetch all site data on load
+  useEffect(() => {
+    async function fetchSiteData() {
+      try {
+        setIsLoading(true);
+        const res = await fetch("/api/admin");
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data.products || []);
+          setLinks(data.links || []);
+          setStandards(data.standards || []);
+          setCredentials(data.credentials || []);
+        }
+      } catch (error) {
+        console.error("Failed to load admin data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchSiteData();
+  }, []);
 
   const handleOpenModal = (item = null) => {
     setEditingItem(item);
@@ -29,15 +50,15 @@ export default function AdminDashboard() {
     } else {
       if (activeTab === "products") {
         setFormData({
-          id: Date.now(), name: "", category: categories[1], dimensions: "",
+          name: "", category: categories[1], dimensions: "",
           material: "", moq: "", price: "", certification: "", buyUrl: "", image: "/products/placeholder.svg",
         });
       } else if (activeTab === "links") {
-        setFormData({ id: Date.now(), title: "", url: "" });
+        setFormData({ title: "", url: "" });
       } else if (activeTab === "standards") {
-        setFormData({ id: Date.now(), code: "", description: "" });
+        setFormData({ code: "", description: "" });
       } else if (activeTab === "credentials") {
-        setFormData({ id: Date.now(), title: "", description: "" });
+        setFormData({ title: "", description: "" });
       }
     }
     setIsModalOpen(true);
@@ -54,30 +75,70 @@ export default function AdminDashboard() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (activeTab === "products") {
-      if (editingItem) setProducts(products.map((p) => (p.id === formData.id ? formData : p)));
-      else setProducts([{ ...formData, id: Date.now() }, ...products]);
-    } else if (activeTab === "links") {
-      if (editingItem) setLinks(links.map((l) => (l.id === formData.id ? formData : l)));
-      else setLinks([{ ...formData, id: Date.now() }, ...links]);
-    } else if (activeTab === "standards") {
-      if (editingItem) setStandards(standards.map((s) => (s.id === formData.id ? formData : s)));
-      else setStandards([{ ...formData, id: Date.now() }, ...standards]);
-    } else if (activeTab === "credentials") {
-      if (editingItem) setCredentials(credentials.map((c) => (c.id === formData.id ? formData : c)));
-      else setCredentials([{ ...formData, id: Date.now() }, ...credentials]);
+    setIsSaving(true);
+    try {
+      const isEdit = !!editingItem;
+      const method = isEdit ? "PUT" : "POST";
+      const payload = {
+        type: activeTab,
+        id: isEdit ? editingItem.id : undefined,
+        data: formData,
+      };
+
+      const res = await fetch("/api/admin", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const savedItem = await res.json();
+        if (activeTab === "products") {
+          if (isEdit) setProducts(products.map((p) => (p.id === savedItem.id ? savedItem : p)));
+          else setProducts([savedItem, ...products]);
+        } else if (activeTab === "links") {
+          if (isEdit) setLinks(links.map((l) => (l.id === savedItem.id ? savedItem : l)));
+          else setLinks([savedItem, ...links]);
+        } else if (activeTab === "standards") {
+          if (isEdit) setStandards(standards.map((s) => (s.id === savedItem.id ? savedItem : s)));
+          else setStandards([savedItem, ...standards]);
+        } else if (activeTab === "credentials") {
+          if (isEdit) setCredentials(credentials.map((c) => (c.id === savedItem.id ? savedItem : c)));
+          else setCredentials([savedItem, ...credentials]);
+        }
+        handleCloseModal();
+      } else {
+        alert("Failed to save changes. Please try again.");
+      }
+    } catch (error) {
+      console.error("Save Error:", error);
+      alert("An error occurred while saving.");
+    } finally {
+      setIsSaving(false);
     }
-    handleCloseModal();
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this item?")) return;
-    if (activeTab === "products") setProducts(products.filter((p) => p.id !== id));
-    else if (activeTab === "links") setLinks(links.filter((l) => l.id !== id));
-    else if (activeTab === "standards") setStandards(standards.filter((s) => s.id !== id));
-    else if (activeTab === "credentials") setCredentials(credentials.filter((c) => c.id !== id));
+    try {
+      const res = await fetch(`/api/admin?type=${activeTab}&id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        if (activeTab === "products") setProducts(products.filter((p) => p.id !== id));
+        else if (activeTab === "links") setLinks(links.filter((l) => l.id !== id));
+        else if (activeTab === "standards") setStandards(standards.filter((s) => s.id !== id));
+        else if (activeTab === "credentials") setCredentials(credentials.filter((c) => c.id !== id));
+      } else {
+        alert("Failed to delete item. Please try again.");
+      }
+    } catch (error) {
+      console.error("Delete Error:", error);
+      alert("An error occurred while deleting.");
+    }
   };
 
   return (
@@ -158,35 +219,48 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/10">
-                  {activeTab === "products" && products.map((item) => (
-                    <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
-                      <td className="px-6 py-4 font-medium flex items-center gap-4"><ImageIcon className="w-4 h-4 text-foreground/30" />{item.name}</td>
-                      <td className="px-6 py-4 text-foreground/70">{item.category}</td>
-                      <td className="px-6 py-4 text-foreground/70">{item.price}</td>
-                      <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={10} className="px-6 py-12 text-center text-foreground/50">
+                        <div className="flex items-center justify-center gap-3">
+                          <Loader2 className="w-5 h-5 text-green animate-spin" />
+                          Loading database contents...
+                        </div>
+                      </td>
                     </tr>
-                  ))}
-                  {activeTab === "links" && links.map((item) => (
-                    <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
-                      <td className="px-6 py-4 font-medium">{item.title}</td>
-                      <td className="px-6 py-4 text-foreground/70">{item.url}</td>
-                      <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
-                    </tr>
-                  ))}
-                  {activeTab === "standards" && standards.map((item) => (
-                    <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
-                      <td className="px-6 py-4 font-medium text-green">{item.code}</td>
-                      <td className="px-6 py-4 text-foreground/70 max-w-sm truncate">{item.description}</td>
-                      <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
-                    </tr>
-                  ))}
-                  {activeTab === "credentials" && credentials.map((item) => (
-                    <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
-                      <td className="px-6 py-4 font-medium">{item.title}</td>
-                      <td className="px-6 py-4 text-foreground/70 max-w-sm truncate">{item.description}</td>
-                      <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
-                    </tr>
-                  ))}
+                  ) : (
+                    <>
+                      {activeTab === "products" && products.map((item) => (
+                        <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
+                          <td className="px-6 py-4 font-medium flex items-center gap-4"><ImageIcon className="w-4 h-4 text-foreground/30" />{item.name}</td>
+                          <td className="px-6 py-4 text-foreground/70">{item.category}</td>
+                          <td className="px-6 py-4 text-foreground/70">{item.price}</td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                        </tr>
+                      ))}
+                      {activeTab === "links" && links.map((item) => (
+                        <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
+                          <td className="px-6 py-4 font-medium">{item.title}</td>
+                          <td className="px-6 py-4 text-foreground/70">{item.url}</td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                        </tr>
+                      ))}
+                      {activeTab === "standards" && standards.map((item) => (
+                        <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
+                          <td className="px-6 py-4 font-medium text-green">{item.code}</td>
+                          <td className="px-6 py-4 text-foreground/70 max-w-sm truncate">{item.description}</td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                        </tr>
+                      ))}
+                      {activeTab === "credentials" && credentials.map((item) => (
+                        <tr key={item.id} className="hover:bg-foreground/5 transition-colors">
+                          <td className="px-6 py-4 font-medium">{item.title}</td>
+                          <td className="px-6 py-4 text-foreground/70 max-w-sm truncate">{item.description}</td>
+                          <td className="px-6 py-4 text-right"><ActionButtons item={item} onEdit={handleOpenModal} onDelete={handleDelete} /></td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -247,8 +321,16 @@ export default function AdminDashboard() {
 
               <div className="p-6 border-t border-foreground/10 bg-foreground/5 flex items-center justify-end gap-4">
                 <button type="button" onClick={handleCloseModal} className="px-5 py-2.5 text-sm font-medium text-foreground/70 hover:text-foreground transition-colors">Cancel</button>
-                <button type="submit" form="admin-form" className="flex items-center gap-2 px-6 py-2.5 bg-green text-black text-sm font-bold rounded-sm transition-transform hover:scale-105">
-                  <Save className="w-4 h-4" /> Save Changes
+                <button type="submit" form="admin-form" disabled={isSaving} className="flex items-center gap-2 px-6 py-2.5 bg-green text-black text-sm font-bold rounded-sm transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" /> Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             </div>

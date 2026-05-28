@@ -11,7 +11,8 @@ import {
 import AnimatedSection from "@/components/AnimatedSection";
 import LogoIcon from "@/components/LogoIcon";
 import ProductCard from "@/components/ProductCard";
-import { products, bestsellers } from "@/data/products";
+import { products as initialProducts, bestsellers } from "@/data/products";
+import { getDb } from "@/lib/firebase-admin";
 
 const trustPoints = [
   {
@@ -52,9 +53,22 @@ const trustPoints = [
   },
 ];
 
-const bestsellerProducts = products.filter((p) => bestsellers.includes(p.id));
+export default async function Home() {
+  let productsList = initialProducts;
 
-export default function Home() {
+  try {
+    const db = getDb();
+    const snap = await db.collection("products").get();
+    if (!snap.empty) {
+      productsList = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    }
+  } catch (error) {
+    console.error("Firestore loading error on homepage:", error.message);
+  }
+
+  const bestsellerProducts = productsList.filter((p) =>
+    bestsellers.includes(Number(p.id)) || bestsellers.includes(String(p.id)) || bestsellers.includes(p.id)
+  );
   return (
     <div className="flex flex-col">
       {/* ═══════════════════════════════════════════

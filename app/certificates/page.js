@@ -1,13 +1,36 @@
 import { ShieldCheck, FileCheck, Leaf, Globe, Award, CheckCircle, Mail, ArrowRight } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
-import { coreStandards, merchantCredentials } from "@/data/certifications";
+import { coreStandards as initialStandards, merchantCredentials as initialCredentials } from "@/data/certifications";
+import { getDb } from "@/lib/firebase-admin";
 
 export const metadata = {
   title: "Compliance & Global Standards — Renatura",
   description: "Renatura's quality assurance, supply chain vetting, and compliance with international compostability standards.",
 };
 
-export default function CertificatesPage() {
+export default async function CertificatesPage() {
+  let standards = initialStandards;
+  let credentials = initialCredentials;
+
+  try {
+    const db = getDb();
+    const [standardsSnap, credentialsSnap] = await Promise.all([
+      db.collection("standards").get(),
+      db.collection("credentials").get(),
+    ]);
+
+    if (!standardsSnap.empty) {
+      standards = standardsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      standards.sort((a, b) => Number(a.id) - Number(b.id));
+    }
+    if (!credentialsSnap.empty) {
+      credentials = credentialsSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      credentials.sort((a, b) => Number(a.id) - Number(b.id));
+    }
+  } catch (error) {
+    console.error("Firestore loading error for certifications:", error.message);
+    // Falls back to static initialStandards and initialCredentials
+  }
   return (
     <div className="flex flex-col">
       {/* 1 & 2. Strategic Headline & Sourcing Philosophy */}
@@ -40,7 +63,7 @@ export default function CertificatesPage() {
           </AnimatedSection>
           
           <div className="flex flex-col gap-10">
-            {coreStandards.map((cert, i) => (
+            {standards.map((cert, i) => (
               <AnimatedSection key={cert.id} delay={i * 0.1}>
                 <div className="group flex flex-col sm:flex-row gap-4 sm:gap-10 sm:items-baseline py-4 border-b border-foreground/10 transition-colors hover:border-foreground/30 cursor-default">
                   <h3 className="text-2xl sm:text-3xl font-bold text-green w-48 flex-shrink-0 transition-all duration-300 group-hover:scale-[1.05] origin-left">
@@ -67,7 +90,7 @@ export default function CertificatesPage() {
           </AnimatedSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {merchantCredentials.map((cred, i) => (
+            {credentials.map((cred, i) => (
               <AnimatedSection key={cred.id} delay={i * 0.1}>
                 <div className="flex flex-col gap-4 p-8 border border-foreground/10 rounded-sm h-full transition-transform duration-300 hover:scale-[1.03] bg-background">
                   <ShieldCheck className="w-8 h-8 text-green" />

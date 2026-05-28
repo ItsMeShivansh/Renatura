@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import AnimatedSection from "@/components/AnimatedSection";
 import ProductCard from "@/components/ProductCard";
 import SearchBar from "@/components/SearchBar";
-import { products, categories } from "@/data/products";
+import { categories } from "@/data/products";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -23,13 +23,33 @@ const fuseOptions = {
 };
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const debounceRef = useRef(null);
 
-  const fuse = useMemo(() => new Fuse(products, fuseOptions), []);
+  // Fetch products dynamically from API
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const res = await fetch("/api/products");
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data);
+        }
+      } catch (error) {
+        console.error("Failed to load products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadProducts();
+  }, []);
+
+  const fuse = useMemo(() => new Fuse(products, fuseOptions), [products]);
 
   // Debounced search handler
   const handleSearch = useCallback(
@@ -169,7 +189,12 @@ export default function ProductsPage() {
       {/* Product Grid */}
       <section className="px-6 lg:px-8 pb-32">
         <div className="max-w-7xl mx-auto">
-          {visibleProducts.length === 0 ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <Loader2 className="w-10 h-10 text-green animate-spin" />
+              <p className="text-foreground/40 text-sm">Loading product catalog...</p>
+            </div>
+          ) : visibleProducts.length === 0 ? (
             <div className="text-center py-24">
               <p className="text-foreground/40 text-lg">
                 No products found matching your search.
