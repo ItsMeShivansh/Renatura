@@ -16,6 +16,7 @@ export default function AdminDashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -42,6 +43,34 @@ export default function AdminDashboard() {
     }
     fetchSiteData();
   }, []);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const body = new FormData();
+    body.append("file", file);
+
+    try {
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setFormData((prev) => ({ ...prev, image: data.url }));
+      } else {
+        alert("Image upload failed. Please ensure Firebase Storage is configured in your project.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("An error occurred during file upload.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleOpenModal = (item = null) => {
     setEditingItem(item);
@@ -292,6 +321,38 @@ export default function AdminDashboard() {
                       <div className="grid grid-cols-2 gap-5"><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Dimensions</label><input type="text" name="dimensions" value={formData.dimensions || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Material</label><input type="text" name="material" value={formData.material || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div></div>
                       <div className="grid grid-cols-2 gap-5"><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">MOQ</label><input type="text" name="moq" value={formData.moq || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div><div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Certification</label><input type="text" name="certification" value={formData.certification || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div></div>
                       <div className="flex flex-col gap-2"><label className="text-sm text-foreground/70">Buy URL</label><input type="url" name="buyUrl" value={formData.buyUrl || ""} onChange={handleChange} required className="w-full px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" /></div>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm text-foreground/70">Product Image</label>
+                        <div className="flex items-center gap-4">
+                          <input 
+                            type="text" 
+                            name="image" 
+                            value={formData.image || ""} 
+                            onChange={handleChange} 
+                            required 
+                            placeholder="/products/placeholder.svg"
+                            className="flex-1 px-4 py-2.5 bg-foreground/5 border border-foreground/10 rounded-sm text-foreground text-sm focus:border-green transition-colors" 
+                          />
+                          <label className="flex items-center gap-2 px-4 py-2.5 border border-foreground/20 rounded-sm text-sm font-semibold text-foreground bg-background hover:bg-foreground/5 transition-colors cursor-pointer flex-shrink-0">
+                            {isUploading ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="w-4 h-4" /> Upload Image
+                              </>
+                            )}
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={handleImageUpload} 
+                              disabled={isUploading}
+                              className="hidden" 
+                            />
+                          </label>
+                        </div>
+                      </div>
                     </>
                   )}
 
