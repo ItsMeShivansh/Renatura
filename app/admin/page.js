@@ -44,32 +44,27 @@ export default function AdminDashboard() {
     fetchSiteData();
   }, []);
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setIsUploading(true);
-    const body = new FormData();
-    body.append("file", file);
-
-    try {
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body,
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setFormData((prev) => ({ ...prev, image: data.url }));
-      } else {
-        alert("Image upload failed. Please ensure Firebase Storage is configured in your project.");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("An error occurred during file upload.");
-    } finally {
-      setIsUploading(false);
+    // Limit size to 800KB to stay within Firestore's 1MB document limit
+    if (file.size > 800 * 1024) {
+      alert("Image is too large. Please select an image under 800 KB.");
+      return;
     }
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({ ...prev, image: reader.result }));
+      setIsUploading(false);
+    };
+    reader.onerror = () => {
+      alert("Failed to read file.");
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleOpenModal = (item = null) => {
