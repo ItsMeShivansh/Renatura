@@ -28,6 +28,12 @@ export const metadata = {
     "sustainable packaging",
     "Renatura",
   ],
+  icons: {
+    icon: [
+      { url: "/logo_light.png", media: "(prefers-color-scheme: light)" },
+      { url: "/logo_dark.png", media: "(prefers-color-scheme: dark)" },
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
